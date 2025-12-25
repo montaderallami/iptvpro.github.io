@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Remote Upload v2.0</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
+    <style>
+        :root {
+            --primary: #1f6feb;
+            --primary-dark: #1a5fcc;
+            --secondary: #8957e5;
+            --success: #238636;
+            --danger: #da3633;
+            --warning: #f57c00;
+            --dark-bg: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0c10 0%, #161b22 100%);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', 'Inter', -apple-system, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            max-width: 480px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .app-header {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 25px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .app-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-header p {
+            font-size: 14px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-content {
+            padding: 25px;
+        }
+
+        /* ID Section */
+        .id-section {
+            background: rgba(13, 17, 23, 0.6);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .section-title svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .id-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .id-input {
+            flex: 1;
+            background: var(--dark-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .id-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.2);
+        }
+
+        .scan-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .scan-btn:hover {
+            background: #7a4bd8;
+            transform: translateY(-2px);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--dark-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(31, 111, 235, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 14px;
+            background: var(--dark-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.2);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-wrapper:hover {
+            border-color: var(--primary);
+            background: rgba(31, 111, 235, 0.05);
+        }
+
+        .file-input-wrapper svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .xtream-fields {
+            display: grid;
+            gap: 15px;
+        }
+
+        /* QR Scanner */
+        #reader {
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+        }
+
+        .scanner-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(31, 111, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        /* Status */
+        .status-container {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(13, 17, 23, 0.6);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .status-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .status-text {
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .status-details {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .app-container {
+                border-radius: 0;
+                border: none;
+            }
+            
+            body {
+                padding: 0;
+            }
+            
+            .app-content {
+                padding: 20px;
+            }
+        }
+
+        /* Icons */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="app-header">
+            <h1>📺 IPTV Sender v2.0</h1>
+            <p>Send playlists directly to your TV</p>
+        </div>
+
+        <div class="app-content">
+            <!-- TV ID Section -->
+            <div class="id-section">
+                <div class="section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/>
+                    </svg>
+                    <span>TV Connection</span>
+                </div>
+                
+                <div class="id-input-container">
+                    <input type="text" id="tvId" class="id-input" placeholder="Enter TV ID or scan QR code">
+                    <button class="scan-btn" onclick="startScanner('id')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2v4h2V7zm0 6h-2v4h2v-4zM2 7h2v4H2V7zm0 6h2v4H2v-4z"/>
+                        </svg>
+                        Scan
+                    </button>
+                </div>
+            </div>
+
+            <!-- QR Scanner -->
+            <div id="reader" style="display: none;"></div>
+            <div class="scanner-controls" style="display: none;" id="scannerControls">
+                <button class="btn btn-danger" onclick="stopScanner()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                    Stop Camera
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="file" onclick="setTab('file')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                    File
+                </div>
+                <div class="tab" data-tab="url" onclick="setTab('url')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                    </svg>
+                    URL
+                </div>
+                <div class="tab" data-tab="xtream" onclick="setTab('xtream')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                    </svg>
+                    Xtream
+                </div>
+            </div>
+
+            <!-- Tab Contents -->
+            <div id="tab-file" class="tab-content active">
+                <div class="input-group">
+                    <div class="file-input-wrapper" onclick="document.getElementById('fileInput').click()">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <p>Click to select M3U file</p>
+                        <p class="file-info">Supports .m3u and .m3u8 files</p>
+                        <input type="file" id="fileInput" accept=".m3u,.m3u8">
+                    </div>
+                    <div id="selectedFile" class="file-info" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div id="tab-url" class="tab-content">
+                <div class="input-group">
+                    <label class="input-label">M3U Playlist URL</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="btn btn-secondary" onclick="startScanner('url')" style="flex: 0 0 auto;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2v4h2V7zm0 6h-2v4h2v-4zM2 7h2v4H2V7zm0 6h2v4H2v-4z"/>
+                            </svg>
+                            Scan QR
+                        </button>
+                    </div>
+                    <input type="text" id="urlInput" class="text-input" placeholder="https://example.com/playlist.m3u">
+                </div>
+            </div>
+
+            <div id="tab-xtream" class="tab-content">
+                <div class="input-group">
+                    <label class="input-label">Xtream Codes Configuration</label>
+                    <div class="xtream-fields">
+                        <input type="text" id="xtreamServer" class="text-input" placeholder="Server URL (e.g., http://example.com:8080)">
+                        <input type="text" id="xtreamUsername" class="text-input" placeholder="Username">
+                        <input type="text" id="xtreamPassword" class="text-input" placeholder="Password">
+                    </div>
+                    <div style="margin-top: 15px; padding: 15px; background: rgba(245, 124, 0, 0.1); border-radius: 8px; border-left: 4px solid var(--warning);">
+                        <p style="color: var(--warning); font-size: 14px; margin-bottom: 5px; font-weight: 500;">ℹ️ Xtream Codes Info</p>
+                        <p style="color: var(--text-secondary); font-size: 12px;">Enter your Xtream Codes credentials to load channels directly from your provider.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send Button -->
+            <button class="btn btn-primary" onclick="sendData()" id="sendBtn" style="width: 100%; margin-top: 10px;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+                Send to TV
+            </button>
+
+            <!-- Status Container -->
+            <div class="status-container" id="statusContainer">
+                <div class="status-header">
+                    <svg class="status-icon" id="statusIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span class="status-text" id="statusText">Status</span>
+                </div>
+                <div class="status-details" id="statusDetails">Details will appear here</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات الباركود
+        let html5QrcodeScanner = null;
+        let scanTarget = 'id';
+        let currentTab = 'file';
+
+        // جلب المعرف من الرابط تلقائياً
+        const urlParams = new URLSearchParams(window.location.search);
+        const idFromUrl = urlParams.get('id');
+        if(idFromUrl) {
+            document.getElementById('tvId').value = idFromUrl;
+        }
+
+        // إعداد المستمعين للأحداث
+        document.addEventListener('DOMContentLoaded', function() {
+            // إعداد حدث تغيير الملف
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('selectedFile').style.display = 'block';
+                    document.getElementById('selectedFile').textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                }
+            });
+
+            // إعداد التبويب الأول
+            setTab('file');
+        });
+
+        function setTab(tab) {
+            currentTab = tab;
+            
+            // تحديد التبويبات النشطة
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.remove('active');
+                if(t.getAttribute('data-tab') === tab) {
+                    t.classList.add('active');
+                }
+            });
+            
+            // تحديد محتويات التبويب
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.remove('active');
+                if(c.id === `tab-${tab}`) {
+                    c.classList.add('active');
+                }
+            });
+        }
+
+        // --- وظائف الكاميرا ---
+        function startScanner(target) {
+            scanTarget = target;
+            document.getElementById('reader').style.display = "block";
+            document.getElementById('scannerControls').style.display = "flex";
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 },
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+            };
+            
+            // تشغيل الكاميرا الخلفية
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                updateStatus("Camera Error", err.toString(), "error");
+                stopScanner();
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // إيقاف الكاميرا بعد النجاح
+            stopScanner();
+            
+            if (scanTarget === 'id') {
+                // إذا كنا نمسح كود التلفزيون
+                if(decodedText.includes("id=")) {
+                    try {
+                        const url = new URL(decodedText);
+                        const id = url.searchParams.get("id");
+                        if(id) {
+                            document.getElementById('tvId').value = id;
+                            updateStatus("TV ID Scanned", `Successfully scanned TV ID: ${id}`, "success");
+                        }
+                    } catch(e) {
+                        document.getElementById('tvId').value = decodedText;
+                        updateStatus("TV ID Scanned", `Successfully scanned TV ID`, "success");
+                    }
+                } else {
+                    document.getElementById('tvId').value = decodedText;
+                    updateStatus("TV ID Scanned", `Successfully scanned TV ID`, "success");
+                }
+            } else if (scanTarget === 'url') {
+                // إذا كنا نمسح رابط M3U
+                document.getElementById('urlInput').value = decodedText;
+                updateStatus("URL Scanned", `Successfully scanned URL`, "success");
+            }
+        }
+
+        function onScanFailure(error) {
+            // تجاهل الأخطاء غير الهامة
+            console.log("Scan error:", error);
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    document.getElementById('reader').style.display = "none";
+                    document.getElementById('scannerControls').style.display = "none";
+                    html5QrcodeScanner.clear();
+                }).catch(err => console.log(err));
+            }
+        }
+
+        // --- وظائف الإرسال ---
+        function sendData() {
+            const tvId = document.getElementById('tvId').value.trim();
+            if(!tvId) { 
+                updateStatus("Error", "Please enter or scan TV ID first!", "error");
+                return; 
+            }
+
+            let dataToSend = null;
+            
+            if (currentTab === 'file') {
+                const file = document.getElementById('fileInput').files[0];
+                if (!file) { 
+                    updateStatus("Error", "Select a file first!", "error");
+                    return; 
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) { 
+                    connectAndSend(tvId, e.target.result, "m3u_file"); 
+                };
+                reader.readAsText(file);
+                
+            } else if (currentTab === 'url') {
+                const url = document.getElementById('urlInput').value.trim();
+                if (!url) { 
+                    updateStatus("Error", "Enter a URL first!", "error");
+                    return; 
+                }
+                connectAndSend(tvId, url, "m3u_url");
+                
+            } else if (currentTab === 'xtream') {
+                const server = document.getElementById('xtreamServer').value.trim();
+                const username = document.getElementById('xtreamUsername').value.trim();
+                const password = document.getElementById('xtreamPassword').value.trim();
+
+                if (!server || !username || !password) {
+                    updateStatus("Error", "Please fill all Xtream fields!", "error");
+                    return;
+                }
+                
+                // إعداد بيانات Xtream كـ JSON
+                const xtreamData = {
+                    xtream: true,
+                    server: server,
+                    username: username,
+                    password: password
+                };
+                
+                connectAndSend(tvId, JSON.stringify(xtreamData), "xtream");
+            }
+        }
+
+        function connectAndSend(id, data, type) {
+            const statusContainer = document.getElementById('statusContainer');
+            const statusText = document.getElementById('statusText');
+            const statusDetails = document.getElementById('statusDetails');
+            const statusIcon = document.getElementById('statusIcon');
+            const btn = document.getElementById('sendBtn');
+            
+            // إعداد الحالة الأولية
+            statusContainer.classList.add('active');
+            statusText.textContent = "Connecting to TV...";
+            statusDetails.textContent = "Establishing connection with TV app";
+            statusIcon.innerHTML = '<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>';
+            statusIcon.style.fill = "#58a6ff";
+            btn.disabled = true;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> Connecting...';
+
+            const peer = new Peer();
+
+            peer.on('open', () => {
+                statusText.textContent = "Connected to server";
+                statusDetails.textContent = "Attempting to connect to TV...";
+                
+                const conn = peer.connect(id, { reliable: true });
+
+                conn.on('open', () => {
+                    statusText.textContent = "Sending data...";
+                    if (type === "xtream") {
+                        statusDetails.textContent = "Sending Xtream Codes configuration...";
+                    } else if (type === "m3u_url") {
+                        statusDetails.textContent = "Sending M3U URL...";
+                    } else {
+                        statusDetails.textContent = "Sending playlist file...";
+                    }
+                    
+                    // إرسال البيانات
+                    conn.send(data);
+                    
+                    // تحديث الحالة بعد الإرسال
+                    setTimeout(() => {
+                        statusText.textContent = "✅ Sent Successfully!";
+                        statusDetails.textContent = type === "xtream" 
+                            ? "Xtream Codes configuration sent to TV" 
+                            : "Data successfully transmitted to TV";
+                        statusIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>';
+                        statusIcon.style.fill = "#238636";
+                        
+                        // إعادة تعيين الزر
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send to TV';
+                            
+                            // إخفاء الحالة بعد 5 ثوان
+                            setTimeout(() => {
+                                statusContainer.classList.remove('active');
+                            }, 5000);
+                        }, 1000);
+                    }, 1000);
+                });
+
+                conn.on('error', (err) => {
+                    updateStatus("Connection Error", err.toString(), "error");
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send to TV';
+                });
+                
+                conn.on('close', () => {
+                    console.log("Connection closed");
+                });
+                
+                // مهلة للاتصال
+                setTimeout(() => {
+                    if(!conn.open) {
+                        updateStatus("Connection Failed", "TV not responding. Make sure the TV app is open.", "error");
+                        btn.disabled = false;
+                        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send to TV';
+                    }
+                }, 8000);
+            });
+
+            peer.on('error', (err) => {
+                updateStatus("PeerJS Error", err.toString(), "error");
+                btn.disabled = false;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send to TV';
+            });
+        }
+
+        function updateStatus(title, details, type) {
+            const statusContainer = document.getElementById('statusContainer');
+            const statusText = document.getElementById('statusText');
+            const statusDetails = document.getElementById('statusDetails');
+            const statusIcon = document.getElementById('statusIcon');
+            
+            statusContainer.classList.add('active');
+            statusText.textContent = title;
+            statusDetails.textContent = details;
+            
+            if (type === "success") {
+                statusIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>';
+                statusIcon.style.fill = "#238636";
+            } else if (type === "error") {
+                statusIcon.innerHTML = '<path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>';
+                statusIcon.style.fill = "#da3633";
+            } else {
+                statusIcon.innerHTML = '<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>';
+                statusIcon.style.fill = "#58a6ff";
+            }
+        }
+    </script>
+</body>
+</html>
