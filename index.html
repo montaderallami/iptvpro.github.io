@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Remote Upload v2.0</title>
+    <title>IPTV Remote Upload v2.1</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
@@ -749,6 +749,22 @@
                             : "Data successfully transmitted to TV";
                         statusIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>';
                         statusIcon.style.fill = "#238636";
+                        
+                        // إعادة تعيين الحقول بعد الإرسال الناجح
+                        if (currentTab === 'file') {
+                            // إعادة تعيين حقل الملف
+                            document.getElementById('fileInput').value = '';
+                            document.getElementById('selectedFile').style.display = 'none';
+                            document.getElementById('selectedFile').textContent = '';
+                        } else if (currentTab === 'url') {
+                            // مسح حقل URL
+                            document.getElementById('urlInput').value = '';
+                        } else if (currentTab === 'xtream') {
+                            // مسح حقول Xtream
+                            document.getElementById('xtreamServer').value = '';
+                            document.getElementById('xtreamUsername').value = '';
+                            document.getElementById('xtreamPassword').value = '';
+                        }
                         
                         // إعادة تعيين الزر
                         setTimeout(() => {
